@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 import httpx
 
 from app.core.config import get_settings
-from app.core.encryption import decrypt_token
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -55,6 +54,36 @@ async def exchange_meta_code(code: str) -> dict:
         )
         response.raise_for_status()
         return response.json()
+
+
+async def get_user_pages(user_access_token: str) -> list[dict]:
+    """Devuelve páginas de Facebook administradas por el usuario OAuth."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{META_GRAPH_URL}/me/accounts",
+            params={
+                "fields": "id,name,access_token,instagram_business_account{id,username}",
+                "access_token": user_access_token,
+            },
+        )
+        response.raise_for_status()
+        return response.json().get("data", [])
+
+
+async def get_primary_page_connection(user_access_token: str) -> Optional[dict]:
+    """Obtiene la mejor conexión disponible (página y cuenta IG asociada)."""
+    pages = await get_user_pages(user_access_token)
+    if not pages:
+        return None
+
+    page = pages[0]
+    ig_account = page.get("instagram_business_account") or {}
+    return {
+        "fb_page_id": page.get("id"),
+        "fb_page_name": page.get("name"),
+        "fb_access_token": page.get("access_token") or user_access_token,
+        "ig_account_id": ig_account.get("id"),
+    }
 
 
 async def get_page_info(page_access_token: str, page_id: str) -> dict:
@@ -144,6 +173,64 @@ async def get_instagram_comments(
         return []
 
 
+async def get_messenger_messages(
+    page_access_token: str, page_id: str, limit: int = 25
+) -> list[dict]:
+    """Obtiene mensajes recientes de Messenger para una página."""
+    try:
+        async with httpx.AsyncClient() as client:
+            conv_resp = await client.get(
+                f"{META_GRAPH_URL}/{page_id}/conversations",
+                params={
+                    "fields": "id,updated_time,messages.limit(10){id,message,created_time,from,to}",
+                    "limit": limit,
+                    "access_token": page_access_token,
+                },
+            )
+            conv_resp.raise_for_status()
+            conversations = conv_resp.json().get("data", [])
+
+            messages: list[dict] = []
+            for conversation in conversations:
+                for msg in conversation.get("messages", {}).get("data", []):
+                    msg["plataforma"] = "messenger"
+                    msg["conversation_id"] = conversation.get("id")
+                    messages.append(msg)
+            return messages
+    except httpx.HTTPError as exc:
+        logger.error("Error al obtener DMs de Messenger: %s", exc)
+        return []
+
+
+async def get_instagram_direct_messages(
+    ig_access_token: str, ig_account_id: str, limit: int = 25
+) -> list[dict]:
+    """Obtiene mensajes directos de Instagram (si la cuenta y permisos lo permiten)."""
+    try:
+        async with httpx.AsyncClient() as client:
+            conv_resp = await client.get(
+                f"{META_GRAPH_URL}/{ig_account_id}/conversations",
+                params={
+                    "fields": "id,updated_time,messages.limit(10){id,message,created_time,from}",
+                    "limit": limit,
+                    "access_token": ig_access_token,
+                },
+            )
+            conv_resp.raise_for_status()
+            conversations = conv_resp.json().get("data", [])
+
+            messages: list[dict] = []
+            for conversation in conversations:
+                for msg in conversation.get("messages", {}).get("data", []):
+                    msg["plataforma"] = "instagram_direct"
+                    msg["conversation_id"] = conversation.get("id")
+                    messages.append(msg)
+            return messages
+    except httpx.HTTPError as exc:
+        logger.error("Error al obtener DMs de Instagram: %s", exc)
+        return []
+
+
 async def reply_to_comment(
     page_access_token: str, comment_id: str, message: str
 ) -> Optional[dict]:
@@ -158,4 +245,26 @@ async def reply_to_comment(
             return response.json()
     except httpx.HTTPError as exc:
         logger.error("Error al responder comentario en Meta: %s", exc)
+        return None
+
+
+async def reply_to_direct_message(
+    page_access_token: str, recipient_id: str, message: str
+) -> Optional[dict]:
+    """Envía un mensaje directo en Messenger usando el endpoint /me/messages."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{META_GRAPH_URL}/me/messages",
+                json={
+                    "recipient": {"id": recipient_id},
+                    "messaging_type": "RESPONSE",
+                    "message": {"text": message},
+                    "access_token": page_access_token,
+                },
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as exc:
+        logger.error("Error al responder DM en Meta: %s", exc)
         return None

@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     META_APP_ID: str = ""
     META_APP_SECRET: str = ""
     META_REDIRECT_URI: str = "http://localhost:8000/api/auth/meta/callback"
+    META_WEBHOOK_VERIFY_TOKEN: str = ""
 
     # Google
     GOOGLE_CLIENT_ID: str = ""

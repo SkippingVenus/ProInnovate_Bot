@@ -13,7 +13,10 @@ from app.services.ai_service import classify_and_respond, generate_alternative_r
 from app.services.meta_service import (
     get_page_comments,
     get_instagram_comments,
+    get_messenger_messages,
+    get_instagram_direct_messages,
     reply_to_comment,
+    reply_to_direct_message,
 )
 from app.services.gmb_service import get_gmb_reviews, reply_to_review
 from app.core.encryption import decrypt_token
@@ -45,6 +48,93 @@ class ApproveRequest(BaseModel):
 class ActionResponse(BaseModel):
     detail: str
     message_id: int
+
+
+class ReplyRequest(BaseModel):
+    respuesta: str
+
+
+class BulkReplyRequest(BaseModel):
+    message_ids: list[int]
+    respuesta: str
+
+
+def _validate_negocio_scope(negocio_id: Optional[int], business: Business) -> None:
+    """Evita que un usuario consulte mensajes Meta de otro negocio."""
+    if negocio_id is not None and negocio_id != business.id:
+        raise HTTPException(status_code=403, detail="No autorizado para este negocio.")
+
+
+@router.get("/facebook")
+async def get_facebook_messages(
+    negocio_id: Optional[int] = Query(None),
+    limit: int = Query(25, ge=1, le=100),
+    business: Business = Depends(require_active_subscription),
+):
+    """Obtiene comentarios de Facebook para el negocio conectado."""
+    _validate_negocio_scope(negocio_id, business)
+    if not business.fb_access_token or not business.fb_page_id:
+        raise HTTPException(status_code=400, detail="Conexión de Facebook incompleta.")
+
+    fb_token = decrypt_token(business.fb_access_token)
+    comments = await get_page_comments(fb_token, business.fb_page_id, limit=limit)
+    return {"items": comments, "count": len(comments)}
+
+
+@router.get("/instagram")
+async def get_instagram_messages(
+    negocio_id: Optional[int] = Query(None),
+    limit: int = Query(25, ge=1, le=100),
+    business: Business = Depends(require_active_subscription),
+):
+    """Obtiene comentarios de Instagram para el negocio conectado."""
+    _validate_negocio_scope(negocio_id, business)
+    if not business.ig_account_id:
+        raise HTTPException(status_code=400, detail="Cuenta de Instagram no conectada.")
+
+    token_encrypted = business.ig_access_token or business.fb_access_token
+    if not token_encrypted:
+        raise HTTPException(status_code=400, detail="Token de Instagram no configurado.")
+
+    ig_token = decrypt_token(token_encrypted)
+    comments = await get_instagram_comments(ig_token, business.ig_account_id, limit=limit)
+    return {"items": comments, "count": len(comments)}
+
+
+@router.get("/messenger")
+async def get_messenger_direct_messages(
+    negocio_id: Optional[int] = Query(None),
+    limit: int = Query(25, ge=1, le=100),
+    business: Business = Depends(require_active_subscription),
+):
+    """Obtiene mensajes directos de Messenger."""
+    _validate_negocio_scope(negocio_id, business)
+    if not business.fb_access_token or not business.fb_page_id:
+        raise HTTPException(status_code=400, detail="Conexión de Messenger incompleta.")
+
+    fb_token = decrypt_token(business.fb_access_token)
+    messages = await get_messenger_messages(fb_token, business.fb_page_id, limit=limit)
+    return {"items": messages, "count": len(messages)}
+
+
+@router.get("/instagram/direct")
+async def get_instagram_direct(
+    negocio_id: Optional[int] = Query(None),
+    limit: int = Query(25, ge=1, le=100),
+    business: Business = Depends(require_active_subscription),
+):
+    """Obtiene mensajes directos de Instagram."""
+    _validate_negocio_scope(negocio_id, business)
+    if not business.ig_account_id:
+        raise HTTPException(status_code=400, detail="Cuenta de Instagram no conectada.")
+
+    token_encrypted = business.ig_access_token or business.fb_access_token
+    if not token_encrypted:
+        raise HTTPException(status_code=400, detail="Token de Instagram no configurado.")
+
+    ig_token = decrypt_token(token_encrypted)
+    messages = await get_instagram_direct_messages(ig_token, business.ig_account_id, limit=limit)
+    return {"items": messages, "count": len(messages)}
 
 
 @router.get("/", response_model=List[MessageResponse])
@@ -209,6 +299,80 @@ async def approve_message(
     msg.respondido_at = datetime.utcnow()
     db.commit()
     return ActionResponse(detail="Respuesta publicada exitosamente.", message_id=message_id)
+
+
+@router.post("/{message_id}/reply", response_model=ActionResponse)
+async def reply_message(
+    message_id: int,
+    payload: ReplyRequest,
+    db: Session = Depends(get_db),
+    business: Business = Depends(require_active_subscription),
+):
+    """Publica una respuesta individual para comentarios/DMs de Meta."""
+    msg = _get_message(db, message_id, business.id)
+    respuesta = payload.respuesta.strip()
+    if not respuesta:
+        raise HTTPException(status_code=400, detail="La respuesta no puede estar vacía.")
+
+    if not business.fb_access_token:
+        raise HTTPException(status_code=400, detail="Token de Meta no configurado.")
+
+    fb_token = decrypt_token(business.fb_access_token)
+    published = False
+
+    if msg.plataforma in ("facebook", "instagram"):
+        result = await reply_to_comment(fb_token, msg.external_id, respuesta)
+        published = result is not None
+    elif msg.plataforma in ("messenger", "instagram_direct"):
+        recipient_id = msg.autor_id or msg.external_id
+        result = await reply_to_direct_message(fb_token, recipient_id, respuesta)
+        published = result is not None
+
+    if not published:
+        raise HTTPException(status_code=502, detail="No se pudo enviar la respuesta a Meta.")
+
+    msg.respuesta_enviada = respuesta
+    msg.estado = "enviado"
+    msg.respondido_at = datetime.utcnow()
+    db.commit()
+    return ActionResponse(detail="Respuesta publicada exitosamente.", message_id=message_id)
+
+
+@router.post("/bulk-reply")
+async def bulk_reply_messages(
+    payload: BulkReplyRequest,
+    db: Session = Depends(get_db),
+    business: Business = Depends(require_active_subscription),
+):
+    """Publica la misma respuesta en múltiples mensajes del negocio."""
+    sent: list[int] = []
+    failed: list[int] = []
+
+    for message_id in payload.message_ids:
+        msg = db.query(Message).filter(
+            Message.id == message_id,
+            Message.negocio_id == business.id,
+        ).first()
+        if not msg:
+            failed.append(message_id)
+            continue
+
+        try:
+            await reply_message(
+                message_id=message_id,
+                payload=ReplyRequest(respuesta=payload.respuesta),
+                db=db,
+                business=business,
+            )
+            sent.append(message_id)
+        except HTTPException:
+            failed.append(message_id)
+
+    return {
+        "detail": "Respuestas masivas procesadas.",
+        "enviados": sent,
+        "fallidos": failed,
+    }
 
 
 @router.post("/{message_id}/ignore", response_model=ActionResponse)

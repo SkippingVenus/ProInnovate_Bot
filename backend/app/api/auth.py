@@ -11,7 +11,11 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.core.deps import get_current_business
 from app.core.config import get_settings
 from app.models.business import Business
-from app.services.meta_service import get_meta_auth_url, exchange_meta_code
+from app.services.meta_service import (
+    get_meta_auth_url,
+    exchange_meta_code,
+    get_primary_page_connection,
+)
 from app.services.gmb_service import get_google_auth_url, exchange_google_code
 from app.core.encryption import encrypt_token
 
@@ -29,6 +33,10 @@ class RegisterRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class ConnectMetaResponse(BaseModel):
+    url: str
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -75,6 +83,18 @@ def meta_oauth_start(business: Business = Depends(get_current_business)):
     return {"url": get_meta_auth_url(state)}
 
 
+@router.get("/meta/connect", response_model=ConnectMetaResponse)
+def meta_oauth_connect(
+    negocio_id: int,
+    db: Session = Depends(get_db),
+):
+    """Inicia OAuth de Meta usando el ID de negocio como estado."""
+    business = db.query(Business).filter(Business.id == negocio_id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado.")
+    return ConnectMetaResponse(url=get_meta_auth_url(str(negocio_id)))
+
+
 @router.get("/meta/callback")
 async def meta_oauth_callback(
     code: str,
@@ -88,13 +108,60 @@ async def meta_oauth_callback(
         raise HTTPException(status_code=400, detail=f"Error al conectar con Meta: {exc}")
 
     access_token = token_data.get("access_token", "")
-    business = db.query(Business).filter(Business.id == int(state)).first()
+    try:
+        business_id = int(state)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Estado OAuth inválido.")
+
+    business = db.query(Business).filter(Business.id == business_id).first()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado.")
 
     business.fb_access_token = encrypt_token(access_token)
+
+    # Intenta enriquecer la conexión con página e Instagram Business asociada.
+    page_connection = None
+    try:
+        page_connection = await get_primary_page_connection(access_token)
+    except Exception:
+        page_connection = None
+
+    if page_connection:
+        business.fb_page_id = page_connection.get("fb_page_id")
+        business.fb_page_name = page_connection.get("fb_page_name")
+        business.fb_access_token = encrypt_token(page_connection.get("fb_access_token") or access_token)
+        business.ig_account_id = page_connection.get("ig_account_id")
+        if business.ig_account_id:
+            business.ig_access_token = encrypt_token(
+                page_connection.get("fb_access_token") or access_token
+            )
+
     db.commit()
-    return {"detail": "Facebook/Instagram conectado exitosamente."}
+    return {
+        "detail": "Facebook/Instagram conectado exitosamente.",
+        "fb_page_id": business.fb_page_id,
+        "fb_page_name": business.fb_page_name,
+        "ig_account_id": business.ig_account_id,
+    }
+
+
+@router.delete("/meta/disconnect/{negocio_id}")
+def disconnect_meta(
+    negocio_id: int,
+    db: Session = Depends(get_db),
+    business: Business = Depends(get_current_business),
+):
+    """Desconecta Facebook/Instagram para un negocio autenticado."""
+    if business.id != negocio_id:
+        raise HTTPException(status_code=403, detail="No autorizado para desconectar este negocio.")
+
+    business.fb_page_id = None
+    business.fb_page_name = None
+    business.fb_access_token = None
+    business.ig_account_id = None
+    business.ig_access_token = None
+    db.commit()
+    return {"detail": "Conexión con Meta eliminada correctamente."}
 
 
 # ── OAuth Google ─────────────────────────────────────────────────────────────

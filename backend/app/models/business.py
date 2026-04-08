@@ -23,8 +23,10 @@ class Business(Base):
 
     # Credenciales OAuth (cifradas con Fernet)
     fb_page_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    fb_page_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     fb_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ig_account_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    ig_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     gmb_location_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     gmb_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
