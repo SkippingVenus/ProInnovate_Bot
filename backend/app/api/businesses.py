@@ -33,6 +33,7 @@ class BusinessResponse(BaseModel):
     horario: Optional[str]
     whatsapp: Optional[str]
     fb_page_id: Optional[str]
+    fb_page_name: Optional[str]
     ig_account_id: Optional[str]
     gmb_location_id: Optional[str]
     plan: str

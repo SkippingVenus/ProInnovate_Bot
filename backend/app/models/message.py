@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, func
+from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -11,6 +11,9 @@ class Message(Base):
     """Mensaje/comentario/reseña recibido en alguna plataforma."""
 
     __tablename__ = "mensajes"
+    __table_args__ = (
+        UniqueConstraint("plataforma", "external_id", name="uq_mensajes_plataforma_external_id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     negocio_id: Mapped[int] = mapped_column(ForeignKey("negocios.id"), nullable=False, index=True)
@@ -19,6 +22,7 @@ class Message(Base):
     plataforma: Mapped[str] = mapped_column(String(30), nullable=False)  # facebook/instagram/google
     tipo: Mapped[str] = mapped_column(String(20), nullable=True)  # consulta/queja/elogio/spam
     autor: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    autor_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     contenido_original: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Respuestas
