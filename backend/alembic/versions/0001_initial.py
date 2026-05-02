@@ -1,4 +1,4 @@
-"""Migración inicial: crear todas las tablas de RepuBot
+"""Migración inicial: crear todas las tablas de MarkiBot
 
 Revision ID: 0001_initial
 Revises:

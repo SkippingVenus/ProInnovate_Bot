@@ -8,7 +8,7 @@ from app.core.database import Base
 
 
 class Business(Base):
-    """Negocio / cliente de RepuBot."""
+    """Negocio / cliente de MarkiBot."""
 
     __tablename__ = "negocios"
 

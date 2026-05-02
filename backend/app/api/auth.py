@@ -41,7 +41,7 @@ class ConnectMetaResponse(BaseModel):
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    """Registra un nuevo negocio en RepuBot."""
+    """Registra un nuevo negocio en MarkiBot."""
     if db.query(Business).filter(Business.email == payload.email).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -9,7 +9,7 @@ export default function Calendar() {
         <p className="text-5xl mb-4">📅</p>
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Función en desarrollo</h2>
         <p className="text-gray-500 text-sm">
-          El calendario de publicaciones estará disponible en la próxima versión de RepuBot.
+          El calendario de publicaciones estará disponible en la próxima versión de MarkiBot.
         </p>
       </div>
     </div>

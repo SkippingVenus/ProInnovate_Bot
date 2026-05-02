@@ -40,7 +40,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">R</div>
-          <h1 className="text-2xl font-bold text-gray-800">RepuBot</h1>
+          <h1 className="text-2xl font-bold text-gray-800">MarkiBot</h1>
           <p className="text-gray-500 text-sm mt-1">Agente de marketing digital con IA</p>
         </div>
 
@@ -125,7 +125,7 @@ export default function Login() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Al usar RepuBot aceptas nuestros términos de servicio
+          Al usar MarkiBot aceptas nuestros términos de servicio
         </p>
       </div>
     </div>

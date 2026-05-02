@@ -1,8 +1,8 @@
-# RepuBot 🤖
+# MarkiBot 🤖
 
 **Agente de marketing digital con IA para pequeños negocios en Lima, Perú**
 
-RepuBot actúa como community manager automatizado: lee, clasifica y responde comentarios, DMs y reseñas en Facebook, Instagram y Google Maps, usando IA (Anthropic Claude) para adaptarse al tono de cada negocio.
+MarkiBot actúa como community manager automatizado: lee, clasifica y responde comentarios, DMs y reseñas en Facebook, Instagram y Google Maps, usando IA (Anthropic Claude) para adaptarse al tono de cada negocio.
 
 ## Stack tecnológico
 
