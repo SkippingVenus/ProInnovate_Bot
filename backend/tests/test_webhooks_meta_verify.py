@@ -47,7 +47,7 @@ def test_meta_webhook_verify_invalid_token(mock_settings):
 
 @patch("app.api.webhooks.settings")
 def test_meta_webhook_verify_invalid_mode(mock_settings):
-    """Verifica que retorna 400 si hub.mode no es 'subscribe'."""
+    """Verifica que retorna 403 si hub.mode no es 'subscribe'."""
     mock_settings.META_WEBHOOK_VERIFY_TOKEN = "test-verify-token"
     
     response = client.get(
@@ -59,12 +59,12 @@ def test_meta_webhook_verify_invalid_mode(mock_settings):
         }
     )
     
-    assert response.status_code == 400
+    assert response.status_code == 403
 
 
 @patch("app.api.webhooks.settings")
 def test_meta_webhook_verify_missing_challenge(mock_settings):
-    """Verifica que retorna 400 si falta hub.challenge."""
+    """Verifica que retorna 422 si falta hub.challenge (validación de Query)."""
     mock_settings.META_WEBHOOK_VERIFY_TOKEN = "test-verify-token"
     
     response = client.get(
@@ -75,12 +75,12 @@ def test_meta_webhook_verify_missing_challenge(mock_settings):
         }
     )
     
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 @patch("app.api.webhooks.settings")
 def test_meta_webhook_verify_no_params(mock_settings):
-    """Verifica que retorna 400 si no hay parámetros."""
+    """Verifica que retorna 422 si no hay parámetros (validación de Query)."""
     response = client.get("/api/webhooks/meta")
     
-    assert response.status_code == 400
+    assert response.status_code == 422
