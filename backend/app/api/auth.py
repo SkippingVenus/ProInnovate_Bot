@@ -105,8 +105,8 @@ async def meta_oauth_callback(
     user_access_token = token_data.get("access_token", "")
     try:
         business_id = int(state) if state else 1
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Estado OAuth inválido.")
+    except (TypeError, ValueError):
+        business_id = 1
 
     business = db.query(Business).filter(Business.id == business_id).first()
     if not business:
