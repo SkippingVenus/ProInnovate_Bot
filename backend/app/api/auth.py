@@ -2,8 +2,9 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 import logging
+import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -82,16 +83,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 # ── OAuth Meta ──────────────────────────────────────────────────────────────
 
 @router.get("/meta/login")
-def meta_oauth_login(state: Optional[str] = None):
+def meta_oauth_login():
     """Redirige al usuario a la pantalla de consentimiento OAuth de Meta con los scopes correctos."""
-    auth_url = get_meta_auth_url(state or "")
+    state = secrets.token_urlsafe(16)
+    auth_url = get_meta_auth_url(state)
     return RedirectResponse(url=auth_url)
 
 
 @router.get("/meta/callback")
 async def meta_oauth_callback(
     code: str,
-    state: str,
+    state: str = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """Callback OAuth de Meta. Intercambia el código por tokens y guarda todas las páginas de Facebook."""
