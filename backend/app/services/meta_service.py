@@ -20,10 +20,8 @@ META_TOKEN_URL = "https://graph.facebook.com/v19.0/oauth/access_token"
 META_SCOPES = [
     "pages_show_list",
     "pages_read_engagement",
-    "pages_manage_posts",
     "pages_messaging",
     "instagram_basic",
-    "instagram_manage_comments",
     "instagram_manage_messages",
 ]
 
