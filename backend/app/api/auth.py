@@ -1,8 +1,10 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -11,13 +13,16 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.core.deps import get_current_business
 from app.core.config import get_settings
 from app.models.business import Business
+from app.models.facebook_page import FacebookPage
 from app.services.meta_service import (
     get_meta_auth_url,
     exchange_meta_code,
-    get_primary_page_connection,
+    get_user_pages,
 )
 from app.services.gmb_service import get_google_auth_url, exchange_google_code
 from app.core.encryption import encrypt_token
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 settings = get_settings()
@@ -76,23 +81,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 # ── OAuth Meta ──────────────────────────────────────────────────────────────
 
-@router.get("/meta")
-def meta_oauth_start(business: Business = Depends(get_current_business)):
-    """Devuelve la URL para iniciar el flujo OAuth con Meta."""
+@router.get("/meta/login")
+def meta_oauth_login(business: Business = Depends(get_current_business)):
+    """Redirige al usuario a la pantalla de consentimiento OAuth de Meta con los scopes correctos."""
     state = str(business.id)
-    return {"url": get_meta_auth_url(state)}
-
-
-@router.get("/meta/connect", response_model=ConnectMetaResponse)
-def meta_oauth_connect(
-    negocio_id: int,
-    db: Session = Depends(get_db),
-):
-    """Inicia OAuth de Meta usando el ID de negocio como estado."""
-    business = db.query(Business).filter(Business.id == negocio_id).first()
-    if not business:
-        raise HTTPException(status_code=404, detail="Negocio no encontrado.")
-    return ConnectMetaResponse(url=get_meta_auth_url(str(negocio_id)))
+    auth_url = get_meta_auth_url(state)
+    return RedirectResponse(url=auth_url)
 
 
 @router.get("/meta/callback")
@@ -101,13 +95,13 @@ async def meta_oauth_callback(
     state: str,
     db: Session = Depends(get_db),
 ):
-    """Callback OAuth de Meta. Guarda los tokens cifrados."""
+    """Callback OAuth de Meta. Intercambia el código por tokens y guarda todas las páginas de Facebook."""
     try:
         token_data = await exchange_meta_code(code)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Error al conectar con Meta: {exc}")
 
-    access_token = token_data.get("access_token", "")
+    user_access_token = token_data.get("access_token", "")
     try:
         business_id = int(state)
     except ValueError:
@@ -117,31 +111,46 @@ async def meta_oauth_callback(
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado.")
 
-    business.fb_access_token = encrypt_token(access_token)
-
-    # Intenta enriquecer la conexión con página e Instagram Business asociada.
-    page_connection = None
+    # Obtener todas las páginas de Facebook del usuario
+    pages = []
     try:
-        page_connection = await get_primary_page_connection(access_token)
-    except Exception:
-        page_connection = None
+        pages = await get_user_pages(user_access_token)
+    except Exception as exc:
+        logger.error(f"Error al obtener páginas de Facebook: {exc}")
 
-    if page_connection:
-        business.fb_page_id = page_connection.get("fb_page_id")
-        business.fb_page_name = page_connection.get("fb_page_name")
-        business.fb_access_token = encrypt_token(page_connection.get("fb_access_token") or access_token)
-        business.ig_account_id = page_connection.get("ig_account_id")
-        if business.ig_account_id:
-            business.ig_access_token = encrypt_token(
-                page_connection.get("fb_access_token") or access_token
-            )
+    if not pages:
+        raise HTTPException(status_code=400, detail="No se encontraron páginas de Facebook asociadas a esta cuenta.")
+
+    # Eliminar páginas previas (si existen)
+    db.query(FacebookPage).filter(FacebookPage.business_id == business_id).delete()
+
+    # Guardar todas las páginas con tokens encriptados
+    saved_pages = []
+    for page in pages:
+        facebook_page = FacebookPage(
+            business_id=business_id,
+            fb_page_id=page.get("id"),
+            fb_page_name=page.get("name"),
+            fb_access_token=encrypt_token(page.get("access_token") or user_access_token),
+            instagram_account_id=page.get("instagram_business_account", {}).get("id"),
+        )
+        db.add(facebook_page)
+        saved_pages.append(facebook_page)
 
     db.commit()
+
+    # Retornar información de las páginas guardadas
     return {
-        "detail": "Facebook/Instagram conectado exitosamente.",
-        "fb_page_id": business.fb_page_id,
-        "fb_page_name": business.fb_page_name,
-        "ig_account_id": business.ig_account_id,
+        "detail": "Páginas de Facebook conectadas exitosamente.",
+        "pages_count": len(saved_pages),
+        "pages": [
+            {
+                "fb_page_id": p.fb_page_id,
+                "fb_page_name": p.fb_page_name,
+                "instagram_account_id": p.instagram_account_id,
+            }
+            for p in saved_pages
+        ],
     }
 
 

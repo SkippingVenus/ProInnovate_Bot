@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import String, Text, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -42,3 +42,8 @@ class Business(Base):
     suscripcion_vence: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+    # Relaciones
+    pages: Mapped[list["FacebookPage"]] = relationship(
+        "FacebookPage", back_populates="business", cascade="all, delete-orphan"
+    )
