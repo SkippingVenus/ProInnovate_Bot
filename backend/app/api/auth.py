@@ -82,10 +82,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 # ── OAuth Meta ──────────────────────────────────────────────────────────────
 
 @router.get("/meta/login")
-def meta_oauth_login(business: Business = Depends(get_current_business)):
+def meta_oauth_login(state: Optional[str] = None):
     """Redirige al usuario a la pantalla de consentimiento OAuth de Meta con los scopes correctos."""
-    state = str(business.id)
-    auth_url = get_meta_auth_url(state)
+    auth_url = get_meta_auth_url(state or "")
     return RedirectResponse(url=auth_url)
 
 
