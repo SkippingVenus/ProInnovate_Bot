@@ -103,6 +103,7 @@ async def meta_oauth_callback(
         raise HTTPException(status_code=400, detail=f"Error al conectar con Meta: {exc}")
 
     user_access_token = token_data.get("access_token", "")
+    logger.debug("Meta OAuth user access token received: %s", user_access_token)
     try:
         business_id = int(state) if state else 1
     except (TypeError, ValueError):

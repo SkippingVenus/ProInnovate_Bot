@@ -59,15 +59,30 @@ async def exchange_meta_code(code: str) -> dict:
 async def get_user_pages(user_access_token: str) -> list[dict]:
     """Devuelve páginas de Facebook administradas por el usuario OAuth."""
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{META_GRAPH_URL}/me/accounts",
-            params={
-                "fields": "id,name,access_token,instagram_business_account{id,username}",
-                "access_token": user_access_token,
-            },
-        )
-        response.raise_for_status()
-        return response.json().get("data", [])
+        try:
+            response = await client.get(
+                f"{META_GRAPH_URL}/me/accounts",
+                params={
+                    "fields": "id,name,access_token,instagram_business_account{id,username}",
+                    "access_token": user_access_token,
+                },
+            )
+            logger.debug("Meta /me/accounts raw response: %s", response.text)
+            response.raise_for_status()
+            payload = response.json()
+            if payload.get("error"):
+                logger.debug("Meta /me/accounts API error payload: %s", payload.get("error"))
+            return payload.get("data", [])
+        except httpx.HTTPStatusError as exc:
+            logger.debug(
+                "Meta /me/accounts HTTP error: status=%s response=%s",
+                exc.response.status_code if exc.response else None,
+                exc.response.text if exc.response else None,
+            )
+            raise
+        except httpx.RequestError as exc:
+            logger.debug("Meta /me/accounts request error: %s", exc)
+            raise
 
 
 async def get_primary_page_connection(user_access_token: str) -> Optional[dict]:
