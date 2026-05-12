@@ -18,15 +18,9 @@ def upgrade() -> None:
     op.add_column("negocios", sa.Column("ig_access_token", sa.Text(), nullable=True))
 
     op.add_column("mensajes", sa.Column("autor_id", sa.String(length=100), nullable=True))
-    op.create_unique_constraint(
-        "uq_mensajes_plataforma_external_id",
-        "mensajes",
-        ["plataforma", "external_id"],
-    )
 
 
 def downgrade() -> None:
-    op.drop_constraint("uq_mensajes_plataforma_external_id", "mensajes", type_="unique")
     op.drop_column("mensajes", "autor_id")
 
     op.drop_column("negocios", "ig_access_token")

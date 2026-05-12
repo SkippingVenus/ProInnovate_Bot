@@ -52,6 +52,8 @@ def upgrade() -> None:
         sa.Column("contenido_original", sa.Text(), nullable=False),
         sa.Column("respuesta_sugerida", sa.Text(), nullable=True),
         sa.Column("respuesta_enviada", sa.Text(), nullable=True),
+        sa.Column("respuesta_editada_por_dueno", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column("calidad_respuesta", sa.String(30), nullable=True),
         sa.Column("estado", sa.String(20), nullable=True, server_default="pendiente"),
         sa.Column("urgente", sa.Boolean(), nullable=True, server_default="false"),
         sa.Column("urgencia", sa.String(10), nullable=True),
@@ -63,6 +65,27 @@ def upgrade() -> None:
     )
     op.create_index("ix_mensajes_id", "mensajes", ["id"])
     op.create_index("ix_mensajes_negocio_id", "mensajes", ["negocio_id"])
+
+    # Tabla posts
+    op.create_table(
+        "posts",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("negocio_id", sa.Integer(), nullable=False),
+        sa.Column("plataforma", sa.String(20), nullable=False),
+        sa.Column("texto", sa.Text(), nullable=False),
+        sa.Column("imagen_url", sa.String(500), nullable=True),
+        sa.Column("tipo_contenido", sa.String(50), nullable=False),
+        sa.Column("generado_por_ia", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column("alcance", sa.Integer(), nullable=True),
+        sa.Column("likes", sa.Integer(), nullable=True),
+        sa.Column("comentarios", sa.Integer(), nullable=True),
+        sa.Column("publicado_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(["negocio_id"], ["negocios.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_posts_id", "posts", ["id"])
+    op.create_index("ix_posts_negocio_id", "posts", ["negocio_id"])
 
     # Tabla competidores
     op.create_table(
@@ -99,6 +122,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["negocio_id"], ["negocios.id"]),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("negocio_id", "plataforma", "fecha", name="uq_metricas_negocio_plataforma_fecha"),
     )
     op.create_index("ix_metricas_id", "metricas", ["id"])
     op.create_index("ix_metricas_negocio_id", "metricas", ["negocio_id"])
@@ -124,6 +148,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_table("posts")
     op.drop_table("suscripciones")
     op.drop_table("metricas")
     op.drop_table("competidores")

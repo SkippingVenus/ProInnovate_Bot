@@ -20,7 +20,7 @@ class FacebookPage(Base):
     fb_page_name: Mapped[str] = mapped_column(String(200), nullable=False)
     fb_access_token: Mapped[str] = mapped_column(Text, nullable=False)  # Encrypted
     instagram_account_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
 
     # Relación inversa
     business: Mapped["Business"] = relationship("Business", back_populates="pages")

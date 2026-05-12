@@ -41,7 +41,7 @@ class Business(Base):
     plan: Mapped[str] = mapped_column(String(20), default="basico")  # basico/pro/agencia
     suscripcion_vence: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
 
     # Relaciones
     pages: Mapped[list["FacebookPage"]] = relationship(

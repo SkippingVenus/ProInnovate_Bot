@@ -1,12 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     # Base
     SECRET_KEY: str = Field(...)
-    ENCRYPTION_KEY: str = Field(...)  # Fernet key base64
+    ENCRYPTION_KEY: str = Field(
+        ..., validation_alias=AliasChoices("ENCRYPTION_KEY", "FERNET_KEY")
+    )  # Fernet key base64
     FRONTEND_URL: str = "http://localhost:5173"
     ENVIRONMENT: str = "development"
 

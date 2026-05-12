@@ -16,7 +16,9 @@ class Message(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    negocio_id: Mapped[int] = mapped_column(ForeignKey("negocios.id"), nullable=False, index=True)
+    negocio_id: Mapped[int] = mapped_column(
+        ForeignKey("negocios.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # Origen
     plataforma: Mapped[str] = mapped_column(String(30), nullable=False)  # facebook/instagram/google
@@ -28,6 +30,8 @@ class Message(Base):
     # Respuestas
     respuesta_sugerida: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     respuesta_enviada: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    respuesta_editada_por_dueno: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    calidad_respuesta: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
 
     # Estado: pendiente / aprobado / enviado / ignorado
     estado: Mapped[str] = mapped_column(String(20), default="pendiente")
@@ -39,7 +43,7 @@ class Message(Base):
     # ID externo de la plataforma (para publicar la respuesta)
     external_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
     respondido_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     negocio = relationship("Business", backref="mensajes")
