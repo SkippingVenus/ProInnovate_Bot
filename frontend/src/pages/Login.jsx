@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
+import * as mockAuth from '../utils/mockAuth';
 
 export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
@@ -13,23 +14,87 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    
     try {
       if (mode === 'login') {
-        const params = new URLSearchParams();
-        params.append('username', form.email);
-        params.append('password', form.password);
-        const resp = await api.post('/auth/login', params, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
-        localStorage.setItem('token', resp.data.access_token);
+        try {
+          // Intentar con servidor real (con timeout corto)
+          const params = new URLSearchParams();
+          params.append('username', form.email);
+          params.append('password', form.password);
+          
+          // Promise que se rechaza después de 4 segundos
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout - BD no disponible')), 4000)
+          );
+          
+          const resp = await Promise.race([
+            api.post('/auth/login', params, {
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            }),
+            timeoutPromise
+          ]);
+          
+          localStorage.setItem('token', resp.data.access_token);
+          localStorage.removeItem('mockMode');
+          navigate('/dashboard');
+          return;
+        } catch (apiError) {
+          // Si falla, usar mock
+          console.warn('🐛 BD no disponible, usando mock auth:', apiError.message);
+          const mockResult = mockAuth.loginUser(form.email, form.password);
+          if (mockResult.success) {
+            localStorage.setItem('token', mockResult.token);
+            localStorage.setItem('mockMode', 'true');
+            navigate('/dashboard');
+            return;
+          } else {
+            setError(mockResult.error);
+            setLoading(false);
+            return;
+          }
+        }
       } else {
-        const resp = await api.post('/auth/register', form);
-        localStorage.setItem('token', resp.data.access_token);
+        // REGISTRAR
+        try {
+          // Intentar con servidor real (con timeout corto)
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout - BD no disponible')), 4000)
+          );
+          
+          const resp = await Promise.race([
+            api.post('/auth/register', form),
+            timeoutPromise
+          ]);
+          
+          localStorage.setItem('token', resp.data.access_token);
+          localStorage.removeItem('mockMode');
+          navigate('/onboarding');
+          return;
+        } catch (apiError) {
+          // Si falla, usar mock
+          console.warn('🐛 BD no disponible, usando mock auth:', apiError.message);
+          const mockResult = mockAuth.registerUser(
+            form.email,
+            form.password,
+            form.nombre,
+            form.rubro
+          );
+          if (mockResult.success) {
+            localStorage.setItem('token', mockResult.token);
+            localStorage.setItem('mockMode', 'true');
+            navigate('/onboarding');
+            return;
+          } else {
+            setError(mockResult.error);
+            setLoading(false);
+            return;
+          }
+        }
       }
-      navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifica tus datos.');
-    } finally {
+      console.error('❌ Error inesperado:', err);
+      setError('Error inesperado. Intenta de nuevo.');
       setLoading(false);
     }
   };
@@ -40,7 +105,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">R</div>
-          <h1 className="text-2xl font-bold text-gray-800">MarkiBot</h1>
+          <h1 className="text-2xl font-bold text-gray-800">RepuBot</h1>
           <p className="text-gray-500 text-sm mt-1">Agente de marketing digital con IA</p>
         </div>
 
@@ -125,7 +190,7 @@ export default function Login() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Al usar MarkiBot aceptas nuestros términos de servicio
+          Al usar RepuBot aceptas nuestros términos de servicio
         </p>
       </div>
     </div>

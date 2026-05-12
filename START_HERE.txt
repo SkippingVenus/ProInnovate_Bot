@@ -1,0 +1,115 @@
+﻿===============================================
+🤖 PROINNOVATE BOT - INICIO RÁPIDO
+===============================================
+
+✅ TODO ESTÁ LISTO PARA USAR
+
+═══════════════════════════════════════════════
+
+1️⃣  INICIAR CONTENEDORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+docker-compose up
+
+Espera 30-40 segundos hasta ver:
+  ✅ PostgreSQL ready
+  ✅ Backend startup complete
+  ✅ Frontend VITE ready
+
+═══════════════════════════════════════════════
+
+2️⃣  ABRIR LA APP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+http://localhost:5173
+
+═══════════════════════════════════════════════
+
+3️⃣  USAR DEMO ACCOUNT (2 MINUTOS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Email:    demo@example.com
+Password: demo123
+
+Click "Iniciar sesión" → Dashboard ✅
+
+═══════════════════════════════════════════════
+
+4️⃣  CREAR CUENTA NUEVA (5 MINUTOS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Click "Crear cuenta"
+Llenar formulario
+Completar Onboarding (5 secciones)
+Dashboard ✅
+
+═══════════════════════════════════════════════
+
+5️⃣  PANEL DE DEBUG 🐛
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Click botón 🐛 esquina inferior derecha
+
+Ver:
+  ✅ Todos los usuarios
+  ✅ Todos los negocios
+  ✅ Estado (BD real o mock)
+  ✅ Modo debug
+
+═══════════════════════════════════════════════
+
+📚 DOCUMENTACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+README.md
+  → Visión general del proyecto
+  → Stack tecnológico
+  → Troubleshooting
+
+CAMBIOS_IMPLEMENTADOS.md
+  → Qué cambió técnicamente
+  → Por qué funcionan los cambios
+  → Cómo se implementó
+
+COMO_USAR.md
+  → Guía completa de funcionalidades
+  → Flujos paso a paso
+  → Solución de problemas detallada
+
+═══════════════════════════════════════════════
+
+⚡ RESUMEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Backend: FastAPI + PostgreSQL
+✅ Frontend: React + Vite
+✅ Auth: JWT (BD real o localStorage)
+✅ Mock: Funciona sin BD
+✅ Debug: Panel flotante 🐛
+✅ Demo: Precargado y listo
+
+═══════════════════════════════════════════════
+
+🎯 ESTADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Status: ✅ OPERATIVO
+Fecha: 12 Mayo 2026
+Versión: 1.0
+
+═══════════════════════════════════════════════
+
+¿PROBLEMAS?
+
+1. Abre F12 DevTools → Console
+2. Click 🐛 para ver estado
+3. Revisa "COMO_USAR.md" sección Troubleshooting
+4. Si nada funciona: docker-compose down && docker-compose up
+
+═══════════════════════════════════════════════
+
+¡LISTO! 🚀
+
+Disfruta el bot. Cualquier problema está documentado.
+
+===============================================

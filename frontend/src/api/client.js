@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  timeout: 3000, // Timeout corto para caer rápido al mock si BD no está
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -27,3 +28,27 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Función para enviar datos de onboarding al backend
+export async function submitOnboarding(onboardingData) {
+  try {
+    const response = await api.post('/businesses/onboarding', {
+      razon_social: onboardingData.businessName,
+      tono: onboardingData.perception,
+      audiencia_objetivo: onboardingData.targetAudience,
+      horario_atencion: onboardingData.scheduleHours,
+      whatsapp_numero: onboardingData.contactWhatsapp,
+      competidores: onboardingData.competitors,
+      principal_desafio: onboardingData.mainChallenge,
+      frecuencia_publicacion: onboardingData.postFrequency,
+      responde_comentarios: onboardingData.respondComments === 'Sí',
+      seguidores_facebook: parseInt(onboardingData.followersFb) || 0,
+      seguidores_instagram: parseInt(onboardingData.followersIg) || 0,
+      plataforma_importante: onboardingData.importantPlatform,
+      impacto_ventas: onboardingData.salesImpact,
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+}
