@@ -2,13 +2,13 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import String, Text, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 
 class Business(Base):
-    """Negocio / cliente de RepuBot."""
+    """Negocio / cliente de MarkiBot."""
 
     __tablename__ = "negocios"
 
@@ -41,4 +41,9 @@ class Business(Base):
     plan: Mapped[str] = mapped_column(String(20), default="basico")  # basico/pro/agencia
     suscripcion_vence: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
+
+    # Relaciones
+    pages: Mapped[list["FacebookPage"]] = relationship(
+        "FacebookPage", back_populates="business", cascade="all, delete-orphan"
+    )

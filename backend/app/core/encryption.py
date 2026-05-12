@@ -27,3 +27,13 @@ def decrypt_token(encrypted: str) -> str:
     """Descifra un token OAuth almacenado."""
     f = _get_fernet()
     return f.decrypt(encrypted.encode()).decode()
+
+
+def encrypt(token: str) -> str:
+    """Compatibilidad con la convención BOT-7."""
+    return encrypt_token(token)
+
+
+def decrypt(encrypted: str) -> str:
+    """Compatibilidad con la convención BOT-7."""
+    return decrypt_token(encrypted)

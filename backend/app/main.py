@@ -7,7 +7,7 @@ from app.api import auth, businesses, messages, reports, webhooks, competitors
 settings = get_settings()
 
 app = FastAPI(
-    title="RepuBot API",
+    title="MarkiBot API",
     description="Agente de marketing digital con IA para pequeños negocios en Lima, Perú",
     version="1.0.0",
 )
@@ -31,7 +31,7 @@ app.include_router(competitors.router)
 
 @app.get("/", tags=["health"])
 def root():
-    return {"service": "RepuBot API", "status": "ok", "version": "1.0.0"}
+    return {"service": "MarkiBot API", "status": "ok", "version": "1.0.0"}
 
 @app.get("/health", tags=["health"])
 def health():
@@ -48,7 +48,7 @@ async def privacy_policy():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Política de Privacidad - RepuBot</title>
+        <title>Política de Privacidad - MarkiBot</title>
         <style>
             body { font-family: -apple-system, sans-serif; max-width: 800px; 
                    margin: 50px auto; padding: 20px; line-height: 1.6; }
@@ -61,7 +61,7 @@ async def privacy_policy():
         <p><strong>Última actualización:</strong> Abril 2026</p>
         
         <h2>1. Información que recopilamos</h2>
-        <p>RepuBot recopila:</p>
+        <p>MarkiBot recopila:</p>
         <ul>
             <li>Nombre de tu negocio y página</li>
             <li>Comentarios y mensajes de Facebook e Instagram</li>
@@ -84,7 +84,7 @@ async def privacy_policy():
         <p>Tokens de acceso encriptados con cifrado Fernet.</p>
         
         <h2>5. Contacto</h2>
-        <p>Email: contacto@repubot.pe</p>
+        <p>Email: contacto@markibot.com</p>
     </body>
     </html>
     """
@@ -98,7 +98,7 @@ async def terms_of_service():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Términos de Servicio - RepuBot</title>
+        <title>Términos de Servicio - MarkiBot</title>
         <style>
             body { font-family: -apple-system, sans-serif; max-width: 800px; 
                    margin: 50px auto; padding: 20px; line-height: 1.6; }
@@ -111,7 +111,7 @@ async def terms_of_service():
         <p><strong>Última actualización:</strong> Abril 2026</p>
         
         <h2>1. Descripción</h2>
-        <p>RepuBot es un agente de marketing digital con IA para pequeños negocios.</p>
+        <p>MarkiBot es un agente de marketing digital con IA para pequeños negocios.</p>
         
         <h2>2. Uso del servicio</h2>
         <p>Aceptas que:</p>
@@ -125,7 +125,7 @@ async def terms_of_service():
         <p>Eres responsable del contenido final publicado en tus redes.</p>
         
         <h2>4. Contacto</h2>
-        <p>Email: contacto@repubot.pe</p>
+        <p>Email: contacto@markibot.com</p>
     </body>
     </html>
     """
@@ -139,7 +139,7 @@ async def data_deletion():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Eliminación de Datos - RepuBot</title>
+        <title>Eliminación de Datos - MarkiBot</title>
         <style>
             body { font-family: -apple-system, sans-serif; max-width: 800px; 
                    margin: 50px auto; padding: 20px; line-height: 1.6; }
@@ -152,7 +152,7 @@ async def data_deletion():
         
         <h2>Cómo eliminar tus datos</h2>
         <p><strong>Opción 1:</strong> Desde el panel → Configuración → Eliminar cuenta</p>
-        <p><strong>Opción 2:</strong> Email a contacto@repubot.pe con:</p>
+        <p><strong>Opción 2:</strong> Email a contacto@markibot.com con:</p>
         <ul>
             <li>Tu correo registrado</li>
             <li>Nombre de tu negocio</li>

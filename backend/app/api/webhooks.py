@@ -5,6 +5,8 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -65,19 +67,28 @@ async def culqi_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/meta")
-async def meta_webhook_handshake(request: Request):
-    """Verificación inicial de webhook solicitada por Meta."""
-    mode = request.query_params.get("hub.mode")
-    token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-
-    if mode != "subscribe" or not challenge:
-        raise HTTPException(status_code=400, detail="Solicitud de verificación inválida.")
+async def meta_webhook_handshake(
+    mode: str = Query(alias="hub.mode"),
+    token: str = Query(alias="hub.verify_token"),
+    challenge: str = Query(alias="hub.challenge"),
+):
+    """Verificación inicial de webhook solicitada por Meta.
+    
+    Meta envía:
+      hub.mode=subscribe
+      hub.verify_token=<token>
+      hub.challenge=<challenge>
+    
+    Responde con 200 + challenge como plain text si es válido, sino 403.
+    """
+    if mode != "subscribe":
+        raise HTTPException(status_code=403, detail="Invalid mode.")
 
     if token != settings.META_WEBHOOK_VERIFY_TOKEN:
         raise HTTPException(status_code=403, detail="Verify token inválido.")
 
-    return int(challenge)
+    # Meta expects the challenge value as plain text
+    return Response(content=challenge, media_type="text/plain")
 
 
 @router.post("/meta")

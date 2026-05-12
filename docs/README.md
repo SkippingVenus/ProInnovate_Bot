@@ -1,4 +1,4 @@
-# Documentación de la API de RepuBot
+# Documentación de la API de MarkiBot
 
 La documentación completa de la API está disponible en formato OpenAPI/Swagger:
 

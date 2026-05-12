@@ -22,7 +22,7 @@ export default function Sidebar({ businessName }) {
       <div className="mb-8 px-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">R</div>
-          <span className="font-bold text-gray-800 text-lg">RepuBot</span>
+          <span className="font-bold text-gray-800 text-lg">MarkiBot</span>
         </div>
         {businessName && (
           <p className="text-xs text-gray-500 mt-1 px-0 truncate">{businessName}</p>

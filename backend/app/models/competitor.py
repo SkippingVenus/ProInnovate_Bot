@@ -13,7 +13,9 @@ class Competitor(Base):
     __tablename__ = "competidores"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    negocio_id: Mapped[int] = mapped_column(ForeignKey("negocios.id"), nullable=False, index=True)
+    negocio_id: Mapped[int] = mapped_column(
+        ForeignKey("negocios.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     nombre: Mapped[str] = mapped_column(String(200), nullable=False)
     fb_page_url: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
@@ -21,6 +23,6 @@ class Competitor(Base):
     gmb_place_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
 
     ultimo_analisis: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
 
     negocio = relationship("Business", backref="competidores")
