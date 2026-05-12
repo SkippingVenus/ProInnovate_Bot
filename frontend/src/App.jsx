@@ -9,6 +9,8 @@ import Competitors from './pages/Competitors';
 import Calendar from './pages/Calendar';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import OnboardingFlow from './pages/OnboardingFlow';
+import MockDebugger from './utils/mockDebugger';
 import { useBusiness } from './api/useBusinesses';
 
 const queryClient = new QueryClient({
@@ -39,9 +41,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <MockDebugger />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedLayout />}>
+            <Route path="/onboarding" element={<OnboardingFlow />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/competitors" element={<Competitors />} />

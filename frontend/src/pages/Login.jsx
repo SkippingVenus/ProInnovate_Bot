@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
+import * as mockAuth from '../utils/mockAuth';
 
 export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
@@ -13,23 +14,87 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    
     try {
       if (mode === 'login') {
-        const params = new URLSearchParams();
-        params.append('username', form.email);
-        params.append('password', form.password);
-        const resp = await api.post('/auth/login', params, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
-        localStorage.setItem('token', resp.data.access_token);
+        try {
+          // Intentar con servidor real (con timeout corto)
+          const params = new URLSearchParams();
+          params.append('username', form.email);
+          params.append('password', form.password);
+          
+          // Promise que se rechaza después de 4 segundos
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout - BD no disponible')), 4000)
+          );
+          
+          const resp = await Promise.race([
+            api.post('/auth/login', params, {
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            }),
+            timeoutPromise
+          ]);
+          
+          localStorage.setItem('token', resp.data.access_token);
+          localStorage.removeItem('mockMode');
+          navigate('/dashboard');
+          return;
+        } catch (apiError) {
+          // Si falla, usar mock
+          console.warn('🐛 BD no disponible, usando mock auth:', apiError.message);
+          const mockResult = mockAuth.loginUser(form.email, form.password);
+          if (mockResult.success) {
+            localStorage.setItem('token', mockResult.token);
+            localStorage.setItem('mockMode', 'true');
+            navigate('/dashboard');
+            return;
+          } else {
+            setError(mockResult.error);
+            setLoading(false);
+            return;
+          }
+        }
       } else {
-        const resp = await api.post('/auth/register', form);
-        localStorage.setItem('token', resp.data.access_token);
+        // REGISTRAR
+        try {
+          // Intentar con servidor real (con timeout corto)
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout - BD no disponible')), 4000)
+          );
+          
+          const resp = await Promise.race([
+            api.post('/auth/register', form),
+            timeoutPromise
+          ]);
+          
+          localStorage.setItem('token', resp.data.access_token);
+          localStorage.removeItem('mockMode');
+          navigate('/onboarding');
+          return;
+        } catch (apiError) {
+          // Si falla, usar mock
+          console.warn('🐛 BD no disponible, usando mock auth:', apiError.message);
+          const mockResult = mockAuth.registerUser(
+            form.email,
+            form.password,
+            form.nombre,
+            form.rubro
+          );
+          if (mockResult.success) {
+            localStorage.setItem('token', mockResult.token);
+            localStorage.setItem('mockMode', 'true');
+            navigate('/onboarding');
+            return;
+          } else {
+            setError(mockResult.error);
+            setLoading(false);
+            return;
+          }
+        }
       }
-      navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifica tus datos.');
-    } finally {
+      console.error('❌ Error inesperado:', err);
+      setError('Error inesperado. Intenta de nuevo.');
       setLoading(false);
     }
   };
